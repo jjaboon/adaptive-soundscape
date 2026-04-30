@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300..800&family=Lexend+Deca:wght@100..900&family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+
+/* background */
+body {
+--grad-top: #0f0f0f;
+--grad-bottom: #0f0f0f; 
+background: linear-gradient(180deg, var(--grad-top) 0%, var(--grad-bottom) 100%);
+transition: --grad-top 1.2s ease-in-out, --grad-bottom 1.2s ease-in-out;
+min-height: 100vh;
+margin: 0;
+overflow: hidden;
+}
+
+@property --grad-top {
+  syntax: '<color>';
+  initial-value: #0f0f0f;
+  inherits: false;
+}
+
+@property --grad-bottom {
+  syntax: '<color>';
+  initial-value: #0f0f0f;
+  inherits: false;
+}
+
+/* title glow animation */
+.glow {
+    margin-top: 18%;
+    font-family: "Lexend Deca", sans-serif;
+    color: white;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 2px #fff;
+        opacity: 0.8;
+    }
+    to {
+        text-shadow: 0 0 10px #fff, 0 0 25px #fff, 0 0 45px rgba(255, 255, 255, 0.5);
+        opacity: 1;
+    }
+}
+/* info grid */
+#info-grid {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.grid-hidden {
+    display: none;
+}
+
+.grid-show {
+    display: block;
+    animation: fadeIn 0.8s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* sound icons */
+.png-icon {
+    width: 40px;
+    height: 40px;
+    filter: invert(100%);
+    margin: 0 auto;
+    display: block;
+    object-fit: contain;
+    /* margin-bottom: 10px; */
+}
+
+.bi {
+    display: block;
+    line-height: 1;
+}
+
+/* raindrop background */
+.raindrop {
+    position: absolute;
+    width: 2px;
+    height: 15px;
+    background-color: #ffffff;
+    animation: fall linear infinite;
+    top: -15px;
+}
+
+@keyframes fall {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(110vh);
+    }
+}
