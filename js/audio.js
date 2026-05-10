@@ -1,86 +1,89 @@
 // js/audio.js
 
 export class AudioEngine {
+    // attribute initialization for wind sound synthesis and sampled tracks
     constructor() {
-        // attribute initialization for wind sound synthesis
+        // create audio context and master source node
         this.ctx = new window.AudioContext()
         this.source = null
-        this.masterGain = this.ctx.createGain()
-        this.lowFilterGain = this.ctx.createGain()
-        this.highFilterGain = this.ctx.createGain()
-        this.lowFilter = this.ctx.createBiquadFilter()
-        this.highFilter = this.ctx.createBiquadFilter()
-        this.highFilterLFO = this.ctx.createOscillator()
-        this.highFilterMod = this.ctx.createGain()
 
-        // attribute initialization for audio assets
-        this.thunderGain = this.ctx.createGain()
-        this.birdsGain = this.ctx.createGain()
-        this.rainGain = this.ctx.createGain()
-
-        const assetGains = [this.thunderGain, this.birdsGain, this.rainGain];
-
-       assetGains.forEach(g => {
-            g.gain.value = 0;
-            g.connect(this.ctx.destination)
-        });
+        // soundtrack registry
+        this.trackNames = ['rain', 'thunder', 'birds', 'crickets', 'waterfall']
+        this.tracks = {}
         
-        this.rainBuffer = null
-        this.thunderBuffer = null
-        this.birdsBuffer = null
+        // setup wind synthesis nodes and sampled track nodes
+        this.setupWindSynthesis()
+        this.setupSampledTracks()
 
-        this.sources = {
-            rain: null,
-            thunder: null,
-            birds: null
-        };
-        this.loadAssets() // start loading audio assets immediately
+        // Start loading samples immediately
+        this.loadAssets()
+    }
 
-        // setup master gain (overall volume control)
-        this.masterGain.gain.value = 0 // start silent
+    // set up the audio node graph for the synthesized wind sound
+    setupWindSynthesis() {
+        // Master volume for the synthesized noise
+        this.masterGain = this.ctx.createGain()
+        this.masterGain.gain.value = 0
 
-        // setup low filter
-        this.lowFilter.type = 'lowpass'
-        this.lowFilter.frequency.value = 400 // hz
+        // separate gain nodes for low and high filtered noise
+        this.lowFilterGain = this.ctx.createGain()
         this.lowFilterGain.gain.value = 0.1
+        this.highFilterGain = this.ctx.createGain()
+        this.highFilterGain.gain.value = 0.1
 
-        // setup high filter
+        // low filter for the thrumming base of the wind
+        this.lowFilter = this.ctx.createBiquadFilter()
+        this.lowFilter.type = 'lowpass'
+        this.lowFilter.frequency.value = 400
+
+        // high filter for the whistling and gusting elements of the wind
+        this.highFilter = this.ctx.createBiquadFilter()
         this.highFilter.type = 'bandpass'
         this.highFilter.frequency.value = 800
-        this.highFilterGain.gain.value = 0.1
         this.highFilter.Q.value = 3
 
-        // setup low frequency oscillator (LFO) for wind variation
+        // low frequency oscillator makes the wind whistle
+        this.highFilterLFO = this.ctx.createOscillator()
         this.highFilterLFO.type = 'sine'
-        this.highFilterLFO.frequency.value = 0.2 // oscillation rate
-        this.highFilterMod.gain.value = 0 // initially no oscillation
+        this.highFilterLFO.frequency.value = 0.2
+        
+        this.highFilterMod = this.ctx.createGain()
+        this.highFilterMod.gain.value = 0
 
-        // connect LFO to high filter frequency
+        // LFO -> Modulator -> High Filter Frequency
         this.highFilterLFO.connect(this.highFilterMod)
         this.highFilterMod.connect(this.highFilter.frequency)
 
-        // 2-layer filtered noise -> masterGain (volume control) -> destination (speaker/headphone)
-        this.lowFilter.connect(this.lowFilterGain)
-        this.lowFilterGain.connect(this.masterGain)
+        // Noise (created in startNoise) -> Filters -> Master -> Speakers/Headphones
         this.highFilter.connect(this.highFilterGain)
+        this.lowFilter.connect(this.lowFilterGain)
         this.highFilterGain.connect(this.masterGain)
+        this.lowFilterGain.connect(this.masterGain)
         this.masterGain.connect(this.ctx.destination)
-
+        
         this.highFilterLFO.start()
+    }
+
+    // set up the audio node graph for the sampled tracks
+    setupSampledTracks() {
+        this.trackNames.forEach(name => {
+            this.tracks[name] = {
+                gain: this.ctx.createGain(),
+                buffer: null,
+                source: null
+            }
+            this.tracks[name].gain.gain.value = 0
+            this.tracks[name].gain.connect(this.ctx.destination)
+        })
     }
 
     // create base white noise and start playback
     startNoise = () => {
         // prevent multiple calls from layering noise sources on top of each other
-        if (this.source) {
-        console.log("Audio is already playing.")
-        return; 
-        }
+        if (this.source) return
 
         // account for if browser blocks audio at first
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume()
-        }
+        if (this.ctx.state === 'suspended') this.ctx.resume()
 
         // allocate memory for sound
         const bufferSize = 2 * this.ctx.sampleRate // around 2 sec
@@ -107,108 +110,86 @@ export class AudioEngine {
         this.masterGain.gain.linearRampToValueAtTime(0.3, this.ctx.currentTime + 2)
     }
 
+    // load audio files for sampled tracks and decode them for playback
     async loadAssets() {
-        // Helper to load multiple files efficiently
-        const load = async (path) => {
-            const response = await fetch(path);
-            return await this.ctx.decodeAudioData(await response.arrayBuffer())
+        const load = async (name) => {
+            try {
+                const res = await fetch(`assets/audio/${name}.mp3`)
+                const arrayBuffer = await res.arrayBuffer()
+                this.tracks[name].buffer = await this.ctx.decodeAudioData(arrayBuffer)
+            } catch (e) {
+                console.error(`Failed to load ${name}:`, e)
+            }
         }
 
-        try {
-            this.rainBuffer = await load('assets/audio/raindrops.mp3')
-            this.thunderBuffer = await load('assets/audio/thunder.mp3')
-            this.birdsBuffer = await load('assets/audio/birds.mp3')
-        } catch (e) {
-            console.error("Audio Load Error:", e) 
-        }
+        await Promise.all(this.trackNames.map(name => load(name)))
     }
 
+    // start all sampled tracks (silent until gain is adjusted)
     startAllLoops = () => {
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume()
-        }
+        if (this.ctx.state === 'suspended') this.ctx.resume()
 
-        // If the rain source already exists, we assume everything is already looping.
-        if (this.sources.rain) {
-            console.log("Loops are already active.")
-            return; 
-        }
+        this.trackNames.forEach(name => {
+            const track = this.tracks[name]
 
-        const audioConfig = [
-            { name: 'rain', buffer: this.rainBuffer, gain: this.rainGain },
-            { name: 'thunder', buffer: this.thunderBuffer, gain: this.thunderGain },
-            { name: 'birds', buffer: this.birdsBuffer, gain: this.birdsGain }
-        ];
+            // if source already exists or buffer isn't loaded yet, skip
+            if (track.source || !track.buffer) return
 
-        audioConfig.forEach(item => {
-            const src = this.ctx.createBufferSource()
-            src.buffer = item.buffer
-            src.loop = true
-            src.connect(item.gain)
-            src.start()
-
-            // Store the reference so we know it's running
-            this.sources[item.name] = src;
+            track.source = this.ctx.createBufferSource()
+            track.source.buffer = track.buffer
+            track.source.loop = true
+            track.source.connect(track.gain)
+            track.source.start()
         })
     }
-
-    // smoothly adjust asset volume via volume slider
-    setRainVolume = (v) => {this.rainGain.gain.linearRampToValueAtTime(v, this.ctx.currentTime + 0.05)}
-    setThunderVolume = (v) => this.thunderGain.gain.linearRampToValueAtTime(v, this.ctx.currentTime + 0.05)
-    setBirdsVolume = (v) => this.birdsGain.gain.linearRampToValueAtTime(v, this.ctx.currentTime + 0.05)
+    
+    // unified volume control for both synthesized and sampled sounds
+    setVolume(name, value) {
+        const targetGain = (name === 'wind') ? this.masterGain.gain : this.tracks[name].gain.gain
+        if (targetGain) {
+            targetGain.linearRampToValueAtTime(value, this.ctx.currentTime + 0.05)
+        }
+    }
 
     // change the sound based on weather
     updateEnvironment = (weather) => {
-        const now = this.ctx.currentTime;
-        const duration = 4; // seconds for transition
-        if (weather.condition === 'Rain') {
-            this.rainGain.gain.linearRampToValueAtTime(0.15, now + 0.05)
-            this.thunderGain.gain.linearRampToValueAtTime(0.07, now + 0.05)
-            this.birdsGain.gain.linearRampToValueAtTime(0, now + 0.05)
-            
-            // Sync UI Sliders
-            this.updateSliders(0.15, 0.07, 0);
-
-            // muffle lower thrumming
-            this.lowFilterGain.gain.linearRampToValueAtTime(0.010, now + duration)
-            this.lowFilter.frequency.exponentialRampToValueAtTime(150, now + duration)
-
-            // increase higher pattering to mimic heavy rain
-            this.highFilter.frequency.exponentialRampToValueAtTime(500, now + duration)
-            this.highFilterGain.gain.linearRampToValueAtTime(0.08, now + duration)
-            this.highFilter.Q.linearRampToValueAtTime(0.5, now + duration)
-
-            // turn off wind oscillations
-            this.highFilterMod.gain.linearRampToValueAtTime(0, now + duration)
-        } else {
-            // fade out raindrops/thunder and fade in birds
-            this.rainGain.gain.linearRampToValueAtTime(0, now + 0.05)
-            this.thunderGain.gain.linearRampToValueAtTime(0, now + 0.05)
-            this.birdsGain.gain.linearRampToValueAtTime(0.3, now + 0.05)
-
-            // Sync UI Sliders
-            this.updateSliders(0, 0, 0.3);
-
-            // bring back clear wind
-            this.lowFilterGain.gain.linearRampToValueAtTime(0.01, now + duration)
-            this.lowFilter.frequency.exponentialRampToValueAtTime(5, now + duration)
-            this.highFilter.frequency.exponentialRampToValueAtTime(380, now + duration)
-            this.highFilterGain.gain.linearRampToValueAtTime(0.3, now + duration)
-            this.highFilter.Q.linearRampToValueAtTime(12, now + duration)
-
-            // bring back wind oscillations
-            this.highFilterMod.gain.linearRampToValueAtTime(80, now + duration)
-            this.highFilterLFO.frequency.linearRampToValueAtTime(0.25, now + duration)
+        const isRainy = weather.condition === 'Rain'
+        const now = this.ctx.currentTime
+        const duration = 4 // seconds for transition
+        
+        const config = isRainy ? {
+            // rain and thunder fade in, wind gains intensity, birds and crickets fade out
+            volumes: { rain: 0.25, thunder: 0.07, birds: 0, crickets: 0, waterfall: 0, wind: 0.35 },
+            lowFreq: 150,
+            lowGain: 0.010,
+            highFreq: 500,
+            highGain: 0.08,
+            modGain: 0,
+            windQ: 0.5
+        } : {
+            // rain and thunder fade out, wind calms down, birds fade in
+            volumes: { rain: 0, thunder: 0, birds: 0.3, crickets: 0, waterfall: 0, wind: 0.5 },
+            lowFreq: 200,
+            lowGain: 0.010,
+            highFreq: 380,
+            highGain: 0.3,
+            modGain: 80,
+            windQ: 12
         }
-    }
 
-    updateSliders = (r, t, b) => {
-        const rS = document.querySelector('#rainVolume');
-        const tS = document.querySelector('#thunderVolume');
-        const bS = document.querySelector('#birdsVolume');
-        // prevent slider update if (somehow) element is missing
-        if (rS) rS.value = r;
-        if (tS) tS.value = t;
-        if (bS) bS.value = b;
+        // sync Audio and UI Sliders simultaneously
+        Object.entries(config.volumes).forEach(([name, vol]) => {
+            this.setVolume(name, vol)
+            const slider = document.querySelector(`#${name}Volume`)
+            if (slider) slider.value = vol
+        })
+
+        // apply filter/modulator changes with smooth transitions
+        this.lowFilter.frequency.exponentialRampToValueAtTime(config.lowFreq, now + duration)
+        this.highFilter.frequency.exponentialRampToValueAtTime(config.highFreq, now + duration)
+        this.highFilterMod.gain.linearRampToValueAtTime(config.modGain, now + duration)
+        this.highFilter.Q.linearRampToValueAtTime(config.windQ, now + duration)
+        this.lowFilterGain.gain.linearRampToValueAtTime(config.lowGain, now + duration)
+        this.highFilterGain.gain.linearRampToValueAtTime(config.highGain, now + duration)
     }
 }

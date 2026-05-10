@@ -21,7 +21,9 @@
       class="d-flex flex-column justify-content-center align-items-center min-vh-100"
     >
       <div class="text-center text-white">
-        <h1 id="title" class="display-3 fw-light mb-5 glow">Adaptive Soundscape</h1>
+        <h1 id="title" class="display-3 fw-light mb-5 glow">
+          Adaptive Soundscape
+        </h1>
         <!-- Loading Spinner Start -->
         <div
           id="loader"
@@ -37,7 +39,7 @@
             id="start-btn"
             type="button"
             class="btn btn-outline-light btn-lg px-5 shadow-sm custom-ghost-btn"
-            style="font-family: 'Lexend Deca', sans-serif;"
+            style="font-family: &quot;Lexend Deca&quot;, sans-serif"
           >
             Sync Weather
           </button>
@@ -48,12 +50,12 @@
           id="headphones"
           class="d-flex flex-column align-items-center opacity-75 mt-5"
         >
-          <i class="bi bi-headphones fs-3 mb-1"></i>
+          <i class="bi-headphones fs-3 mb-1"></i>
           <p class="small text-uppercase tracking-wider">
             Best with headphones
           </p>
         </div>
-         <!-- Headphones Recommendation End -->
+        <!-- Headphones Recommendation End -->
         <!-- Sounds Grid Start -->
         <div id="info-grid" class="container grid-hidden mt-3 pb-5">
           <div class="d-flex justify-content-center mt-3 mb-3">
@@ -76,11 +78,34 @@
           </div>
           <!-- Manual Rain Mode Toggle End-->
           <div class="row g-4 align-items-stretch">
+            <!-- Wind Volume Slider Start -->
             <div class="col-6 col-md-4">
               <div
                 class="h-100 p-5 border border-light rounded bg-white bg-opacity-10 text-white"
               >
-                <i class="bi bi-cloud-rain fs-1"></i>
+                <i class="bi-wind icon-size"></i>
+                <div class="w-100">
+                  <label for="windVolume" class="form-label small mb-1"
+                    >Wind</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="windVolume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+            <!-- Wind Volume Slider End -->
+            <!-- Raindrop Volume Slider Start -->
+            <div class="col-6 col-md-4">
+              <div
+                class="h-100 p-5 border border-light rounded bg-white bg-opacity-10 text-white"
+              >
+                <i class="bi-cloud-rain icon-size"></i>
                 <div class="w-100">
                   <label for="rainVolume" class="form-label small mb-1"
                     >Raindrops</label
@@ -96,11 +121,13 @@
                 </div>
               </div>
             </div>
+            <!-- Raindrop Volume Slider End -->
+            <!-- Thunder Volume Slider Start -->
             <div class="col-6 col-md-4">
               <div
                 class="h-100 p-5 border border-light rounded bg-white bg-opacity-10 text-white"
               >
-                <i class="bi bi-lightning fs-1"></i>
+                <i class="bi-lightning icon-size"></i>
                 <div class="w-100">
                   <label for="thunderVolume" class="form-label small mb-1"
                     >Thunder</label
@@ -116,6 +143,8 @@
                 </div>
               </div>
             </div>
+            <!-- Thunder Volume Slider End -->
+            <!-- Birds Volume Slider Start -->
             <div class="col-6 col-md-4">
               <div
                 class="h-100 p-5 border border-light rounded bg-white bg-opacity-10 text-white"
@@ -123,11 +152,11 @@
                 <img
                   src="assets/images/bird.png"
                   alt="Birds Icon"
-                  class="png-icon"
+                  class="icon-size invert-icon"
                 />
                 <div class="w-100">
                   <label for="birdsVolume" class="form-label small mb-1"
-                    >Birds Chirping</label
+                    >Birds</label
                   >
                   <input
                     type="range"
@@ -140,6 +169,59 @@
                 </div>
               </div>
             </div>
+            <!-- Birds Volume Slider End -->
+            <!-- Crickets Volume Slider Start -->
+            <div class="col-6 col-md-4">
+              <div
+                class="h-100 p-5 border border-light rounded bg-white bg-opacity-10 text-white"
+              >
+                <img
+                  src="assets/images/cricket.png"
+                  alt="Cricket Icon"
+                  class="icon-size invert-icon"
+                />
+                <div class="w-100">
+                  <label for="cricketsVolume" class="form-label small mb-1"
+                    >Crickets</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="cricketsVolume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+            <!-- Crickets Volume Slider End -->
+            <!-- Waterfall Volume Slider Start -->
+            <div class="col-6 col-md-4">
+              <div
+                class="h-100 p-5 border border-light rounded bg-white bg-opacity-10 text-white"
+              >
+                <img
+                  src="assets/images/waterfall.svg"
+                  alt="Waterfall Icon"
+                  class="icon-size invert-icon"
+                />
+                <div class="w-100">
+                  <label for="waterfallVolume" class="form-label small mb-1"
+                    >Waterfall</label
+                  >
+                  <input
+                    type="range"
+                    class="form-range"
+                    id="waterfallVolume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+            <!-- Waterfall Volume Slider End -->
           </div>
         </div>
         <!-- Sounds Grid End -->
